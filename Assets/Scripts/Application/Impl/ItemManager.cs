@@ -43,13 +43,13 @@ public class ItemManager : CustomNetworkBehaviour, IItemManager
         var spawnPoint =
             SpawnPointsManager.GetSpawnPoint(player, spawnPointId);
         var item = _items[player].First(f => f.Id == itemId);
-        ObjectManager.RegisterPrefab(item);
-        ObjectManager.Spawn(item, spawnPoint.transform.position, spawnPoint.transform.rotation, o =>
+        var unit = UnitsDescriptor.NameUnitDescriptorDict[item.Name];
+        ObjectManager.RegisterPrefab(unit);
+        ObjectManager.Spawn(unit, spawnPoint.transform.position, spawnPoint.transform.rotation, o =>
         {
-            var pI =
-                o.GetComponent<PickableItem>();
-            pI.Key = item.Name;
-            pI.RpcSetKey(item.Name);
+            var aa =
+                o.GetComponent<RandomShootingDude>();
+            aa.SetReady();
         }, null);
         _items[player] = _items[player].Where(w => w.Id != itemId).ToList();
         TargetRemoveItem(PlayersManager.GetPlayers().First(w => w.Slot == player).ConnectionInstance, itemId);

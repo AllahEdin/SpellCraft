@@ -9,6 +9,8 @@ public interface IPlayersManager<T>
 
     event Action<IClientToServerConnection<T>> PlayerRemoved;
 
+    event Action MoveToDefaultPositions;
+
     /// <summary>
     /// Check if any empty slot left and associate connection to it 
     /// </summary>
@@ -28,4 +30,6 @@ public interface IPlayersManager<T>
     IClientToServerConnection<T> GetPlayer(Guid id);
 
     IEnumerable<IClientToServerConnection<T>> GetPlayers();
+
+    void MovePlayersToDefaultPositions();
 }

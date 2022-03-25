@@ -5,7 +5,7 @@ using Mirror;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class Inventory : MonoBehaviour
+public class Inventory : CustomNetworkBehaviour
 {
     private class ItemWithDescriptor
     {
@@ -24,6 +24,13 @@ public class Inventory : MonoBehaviour
     [SerializeField] private GameObject _inventoryItemPrefab;
 
     private List<ItemWithDescriptor> _items = new List<ItemWithDescriptor>();
+
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+        ItemManager.ClientGotItem += AddItem;
+        ItemManager.ClientRemovedItem += RemoveItem;
+    }
 
     public void DestroyView()
     {

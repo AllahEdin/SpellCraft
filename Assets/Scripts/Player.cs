@@ -12,6 +12,7 @@ namespace Assets.Scripts
 
         public PlayerSlot Slot { get; private set; }
 
+        private IPlayersManager<NetworkConnection> _playersManager;
         private IItemManager _itemManager;
         private PlayerInputManager _playerInputManager;
 
@@ -20,15 +21,37 @@ namespace Assets.Scripts
         [SerializeField] private Inventory _clientInventory;
 
         [SerializeField] private TextView _textView;
-        
+
         public override void OnStartServer()
         {
             Debug.Log("Awake server player");
             base.OnStartServer();
             _itemManager = FindObjectOfType<ItemManager>();
+            
+            _playersManager = FindObjectOfType<PlayerManager>();
+            _playersManager.MoveToDefaultPositions += PlayersManagerOnMoveToDefaultPositions;
+
             _playerInputManager = FindObjectOfType<PlayerInputManager>();
             _clientInventory = FindObjectOfType<Inventory>();
             DestroyInventoryView();
+        }
+
+        [Server]
+        private void PlayersManagerOnMoveToDefaultPositions()
+        {
+            foreach (var player in _playersManager.GetPlayers())
+            {
+                TargetMoveToPosition(player.ConnectionInstance, MapDescriptor.Areas[player.Slot].Center);   
+            }
+        }
+
+        [TargetRpc]
+        public void TargetMoveToPosition(NetworkConnection connection, Vector3 pos)
+        {
+            if (isLocalPlayer)
+            {
+                gameObject.transform.position = pos;
+            }
         }
 
         public override void OnStartLocalPlayer()
@@ -37,6 +60,8 @@ namespace Assets.Scripts
             base.OnStartLocalPlayer();
             _itemManager = FindObjectOfType<ItemManager>();
             _clientInventory = FindObjectOfType<Inventory>();
+            _itemManager.ClientGotItem += ItemManagerOnClientGotItem;
+            _itemManager.ClientRemovedItem += ItemManagerOnClientRemovedItem;
         }
 
         [ServerCallback]
@@ -44,17 +69,15 @@ namespace Assets.Scripts
         {
             _clientInventory?.DestroyView();
         }
-        
-        [TargetRpc]
-        public void TargetRegisterClientEventHandlers(NetworkConnection connection)
-        {
-            Debug.Log($"Registering event handlers for ItemManager");
-            _itemManager.ClientGotItem += ItemManagerOnClientGotItem;
-            _itemManager.ClientRemovedItem += ItemManagerOnClientRemovedItem;
-        }
 
         [Server]
         public void SetSlot(PlayerSlot playerSlot)
+        {
+            Slot = playerSlot;
+        }
+
+        [TargetRpc]
+        public void TargetSetSlot(NetworkConnection connection, PlayerSlot playerSlot)
         {
             Slot = playerSlot;
         }
@@ -64,14 +87,12 @@ namespace Assets.Scripts
         {
             _items.Add(obj);
             _textView.SetText("");
-            _clientInventory.AddItem(obj);
         }
 
         [ClientCallback]
         private void ItemManagerOnClientRemovedItem(Guid id)
         {
             _items = _items.Where(w => w.Id != id).ToList();
-            _clientInventory.RemoveItem(id);
         }
 
         [Command]
@@ -88,10 +109,19 @@ namespace Assets.Scripts
             if (isLocalPlayer)
             {
                 var axis =
-                    new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
-                
-                gameObject.transform.position += new Vector3(axis.x * speed * Time.fixedDeltaTime,
-                    0, axis.y * speed * Time.fixedDeltaTime);
+                    new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical")).normalized;
+
+                var newPos =
+                    gameObject.transform.position + new Vector3(axis.x * speed * Time.fixedDeltaTime,
+                        0, axis.y * speed * Time.fixedDeltaTime);
+
+                if ((newPos - gameObject.transform.position).sqrMagnitude > 0)
+                {
+                    if (MapDescriptor.Areas[Slot].InArea(newPos))
+                    {
+                        gameObject.transform.position = newPos;
+                    }
+                }
             }
         }
 

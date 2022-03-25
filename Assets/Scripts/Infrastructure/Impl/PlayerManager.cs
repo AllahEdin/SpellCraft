@@ -13,6 +13,8 @@ public class PlayerManager : NetworkBehaviour, IPlayersManager<NetworkConnection
 
     public event Action<IClientToServerConnection<NetworkConnection>> PlayerRemoved;
 
+    public event Action MoveToDefaultPositions;
+
     private Dictionary<PlayerSlot, PlayerStatus> _playerStatuses = new Dictionary<PlayerSlot, PlayerStatus>();
 
     private Dictionary<PlayerSlot, IClientToServerConnection<NetworkConnection>> _connections = new Dictionary<PlayerSlot, IClientToServerConnection<NetworkConnection>>();
@@ -90,7 +92,7 @@ public class PlayerManager : NetworkBehaviour, IPlayersManager<NetworkConnection
 
     public IClientToServerConnection<NetworkConnection> GetPlayer(Guid id)
     {
-        return _connections.First(f => f.Value.Id.Equals(id)).Value as IClientToServerConnection<NetworkConnection>;
+        return _connections.First(f => f.Value.Id.Equals(id)).Value;
     }
 
     public IEnumerable<IClientToServerConnection<NetworkConnection>> GetPlayers()
@@ -99,5 +101,11 @@ public class PlayerManager : NetworkBehaviour, IPlayersManager<NetworkConnection
         {
             yield return clientToServerConnection.Value;
         }
+    }
+
+    [Server]
+    public void MovePlayersToDefaultPositions()
+    {
+        MoveToDefaultPositions?.Invoke();
     }
 }

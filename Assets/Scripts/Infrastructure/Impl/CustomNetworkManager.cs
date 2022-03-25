@@ -47,27 +47,22 @@
     [Server]
     public override void OnServerAddPlayer(NetworkConnection conn)
     {
-        Transform startPos = GetStartPosition();
-        GameObject player = startPos != null
-            ? Instantiate(playerPrefab, startPos.position, startPos.rotation)
-            : Instantiate(playerPrefab);
-
-        // instantiating a "Player" prefab gives it the name "Player(clone)"
-        // => appending the connectionId is WAY more useful for debugging!
-        player.name = $"{playerPrefab.name} [connId={conn.connectionId}]";
-        NetworkServer.AddPlayerForConnection(conn, player);
-
-        var playerComponent =
-            player.GetComponent<Player>();
-
         if (_connectionMappings.TryGetValue(conn.connectionId, out var existingConnection))
         {
             if (_slotMappings.TryGetValue(existingConnection, out var slot))
             {
-                Debug.Log($"Player {slot} ChooseSpell");
+                GameObject player = Instantiate(playerPrefab, MapDescriptor.Areas[slot].Center, Quaternion.identity);
+
+                // instantiating a "Player" prefab gives it the name "Player(clone)"
+                // => appending the connectionId is WAY more useful for debugging!
+                player.name = $"{playerPrefab.name} [connId={conn.connectionId}]";
+                NetworkServer.AddPlayerForConnection(conn, player);
+
+                var playerComponent =
+                    player.GetComponent<Player>();
                 playerComponent.SetSlot(slot);
+                playerComponent.TargetSetSlot(conn, slot);
                 PlayersManager.SetPlayerReady(slot);
-                playerComponent.TargetRegisterClientEventHandlers(conn);
             }
         }
     }

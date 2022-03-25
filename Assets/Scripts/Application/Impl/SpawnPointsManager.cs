@@ -14,8 +14,14 @@
 
         private readonly Dictionary<PlayerSlot, List<SpawnPoint>> _spawnPointsDictionary;
 
+        private readonly Dictionary<PlayerSlot, List<Guid>> _spawnPointsIds;
+
         public SpawnPointsManager()
         {
+            _spawnPointsIds = typeof(PlayerSlot).GetEnumNames().Select(s =>
+                    Enum.TryParse(s, out PlayerSlot slot) ? slot : throw new Exception())
+                .ToDictionary(k => k, v => new List<Guid>());
+
             _spawnPointsDictionary =
                 typeof(PlayerSlot).GetEnumNames().Select(s =>
                         Enum.TryParse(s, out PlayerSlot slot) ? slot : throw new Exception())
@@ -28,6 +34,7 @@
             foreach (var playerSlot in typeof(PlayerSlot).GetEnumNames().Select(s =>
                          Enum.TryParse(s, out PlayerSlot slot) ? slot : throw new Exception()))
             {
+                var idCounter = 0;
                 ObjectManager.RegisterPrefab(_spawnPointPrefab);
 
                 IEnumerator<Vector3> enumerator = playerSlot switch
@@ -39,18 +46,24 @@
 
                 while (enumerator.MoveNext())
                 {
+                    var localCounter = idCounter;
+                    if (_spawnPointsIds[playerSlot].Count <= idCounter)
+                    {
+                        _spawnPointsIds[playerSlot].Add(Guid.NewGuid());
+                    }
                     var instance =
                         ObjectManager.Spawn(_spawnPointPrefab, enumerator.Current,
-                            Quaternion.identity,
+                            playerSlot == PlayerSlot.One ? Quaternion.identity : Quaternion.Euler(0, 180, 0),
                             o =>
                             {
                                 var sp = o.GetComponent<SpawnPoint>();
-                                sp.Id = Guid.NewGuid();
+                                sp.Id = _spawnPointsIds[playerSlot][localCounter];
                             }, PlayersManager.GetPlayers().First(f => f.Slot == playerSlot).Id);
 
                     var spawnPoint = instance.GetComponent<SpawnPoint>();
                     _spawnPointsDictionary[playerSlot].Add(spawnPoint);
                     _spawnPoints.Add(instance);
+                    idCounter++;
                 }
             }
         }
@@ -63,6 +76,10 @@
                 NetworkServer.Destroy(spawnPoint);
             }
             _spawnPoints.Clear();
+            foreach (var spdItem in _spawnPointsDictionary)
+            {
+                spdItem.Value.Clear();
+            }
         }
 
         public SpawnPoint GetSpawnPoint(PlayerSlot playerSlot, Guid id)

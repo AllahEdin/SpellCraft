@@ -31,7 +31,7 @@ public class ObjectManager : CustomNetworkBehaviour, IObjectManager
         var path =
             objectToSpawn.Path;
 
-        Debug.Log($"Server registering prefab {path}");
+        //Debug.Log($"Server registering prefab {path}");
 
         foreach (var clientToServerConnection in PlayersManager.GetPlayers())
         {

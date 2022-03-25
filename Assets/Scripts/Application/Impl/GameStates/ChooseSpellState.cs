@@ -36,7 +36,7 @@ public class ChooseSpellState : CustomNetworkBehaviour, IGameState
         {
             _currentTime += Time.deltaTime;
 
-            if (_currentTime > 20 || !_chooseTime)
+            if (_currentTime > 10 || !_chooseTime)
             {
                 foreach (var pickableItemForPlayer in _pickableItems)
                 {
@@ -58,7 +58,7 @@ public class ChooseSpellState : CustomNetworkBehaviour, IGameState
     public void StartState()
     {
         _pickedItems.Clear();
-
+        PlayersManager.MovePlayersToDefaultPositions();
         _playerIds = PlayersManager.GetPlayers().Select(s => s.Id).ToArray();
         _itemsToChoose = _playerIds.ToDictionary(k => k, v => new List<NetworkObjectDescriptor>());
 
@@ -78,12 +78,13 @@ public class ChooseSpellState : CustomNetworkBehaviour, IGameState
             _pickableItems.Add(player.Slot, new List<PickableItem>());
             foreach (var networkObjectDescriptor in item.Value)
             {
-                int localCount = count++;
-                var pos = new Vector3(-3 - (float)item.Value.Count / 2 + localCount, 0, player.Slot == PlayerSlot.One ? -3 : 3);
+                var pos = MapDescriptor.SpellSpawnPoints[player.Slot][count];
+                //new Vector3(-3 - (float)item.Value.Count / 2 + localCount, 0, player.Slot == PlayerSlot.One ? -3 : 3);
+                count++;
 
                 ObjectManager.RegisterPrefab(networkObjectDescriptor);
                 var instance =
-                    ObjectManager.Spawn(networkObjectDescriptor, pos, Quaternion.identity, go =>
+                    ObjectManager.Spawn(networkObjectDescriptor, pos.Position, pos.Rotation, go =>
                     {
                         var pickableItem =
                             go.GetComponent<PickableItem>();
