@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class SpawnPoint : CustomNetworkBehaviour
 {
-    [SyncVar(hook = nameof(SetId))] 
+    [SyncVar(hook = nameof(SetId))]
     public Guid Id;
 
     public override void OnStartServer()

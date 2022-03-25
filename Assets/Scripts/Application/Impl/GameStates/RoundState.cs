@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using Mirror;
 using UnityEngine;
 
@@ -11,16 +9,6 @@ public class RoundState : CustomNetworkBehaviour, IGameState
 
     private bool _isActive;
     private float _currentTime;
-
-    private readonly Dictionary<PlayerSlot, List<Guid>> _slotsUsed;
-
-    public RoundState()
-    {
-        _slotsUsed =
-            typeof(PlayerSlot).GetEnumNames().Select(s =>
-                    Enum.TryParse(s, out PlayerSlot slot) ? slot : throw new Exception())
-                .ToDictionary(k => k, v => new List<Guid>());
-    }
 
     [ServerCallback]
     private void FixedUpdate()
@@ -49,10 +37,11 @@ public class RoundState : CustomNetworkBehaviour, IGameState
 
     private void PlayerInputManagerOnOnPlayerAttemptsToUseItem(PlayerSlot player, Guid itemId, Guid spawnPointId)
     {
-        if (!_slotsUsed[player].Contains(spawnPointId))
+        var isEmpty = SpawnPointsManager.IsEmpty(spawnPointId);
+
+        if (isEmpty)
         {
             ItemManager.UseItem(player, itemId, spawnPointId);
-            _slotsUsed[player].Add(spawnPointId);
         }
     }
 }

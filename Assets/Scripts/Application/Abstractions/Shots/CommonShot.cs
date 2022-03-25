@@ -3,6 +3,11 @@ using UnityEngine;
 
 public class CommonShot : CustomNetworkBehaviour
 {
+    public PlayerSlot PlayerOwner { get; set; }
+
+    public float Dmg => _dmg;
+
+    [SerializeField] private float _dmg;
     [SerializeField] private float _speed;
     [SerializeField] private float _lifetime;
 

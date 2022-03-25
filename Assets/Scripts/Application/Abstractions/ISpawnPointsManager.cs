@@ -6,5 +6,9 @@ public interface ISpawnPointsManager
 
     void RemoveSpawnPointsToPlayers();
 
-    SpawnPoint GetSpawnPoint(PlayerSlot playerSlot, Guid id);
+    SpawnPoint GetSpawnPoint(Guid id);
+
+    bool IsEmpty(Guid id);
+
+    void SetIsEmpty(PlayerSlot playerSlot, Guid id, bool isEmpty);
 }

@@ -16,8 +16,15 @@
 
         private readonly Dictionary<PlayerSlot, List<Guid>> _spawnPointsIds;
 
+        private readonly Dictionary<PlayerSlot, List<Guid>> _slotsUsed;
+
         public SpawnPointsManager()
         {
+            _slotsUsed =
+                typeof(PlayerSlot).GetEnumNames().Select(s =>
+                        Enum.TryParse(s, out PlayerSlot slot) ? slot : throw new Exception())
+                    .ToDictionary(k => k, v => new List<Guid>());
+
             _spawnPointsIds = typeof(PlayerSlot).GetEnumNames().Select(s =>
                     Enum.TryParse(s, out PlayerSlot slot) ? slot : throw new Exception())
                 .ToDictionary(k => k, v => new List<Guid>());
@@ -82,9 +89,27 @@
             }
         }
 
-        public SpawnPoint GetSpawnPoint(PlayerSlot playerSlot, Guid id)
+        public SpawnPoint GetSpawnPoint(Guid id)
         {
-            return _spawnPointsDictionary[playerSlot].First(f => f.Id == id);
+            return _spawnPointsDictionary.SelectMany(s => s.Value).First(f => f.Id == id);
+        }
+
+        public bool IsEmpty(Guid id)
+        {
+            return _slotsUsed.SelectMany(s => s.Value).FirstOrDefault(f => f == id).Equals(Guid.Empty);
+        }
+
+        [Server]
+        public void SetIsEmpty(PlayerSlot playerSlot, Guid id, bool isEmpty)
+        {
+            if (!isEmpty)
+            {
+                _slotsUsed[playerSlot].Add(id);
+            }
+            else
+            {
+                _slotsUsed[playerSlot].Remove(id);
+            }
         }
     }
 

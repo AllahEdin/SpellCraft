@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Assets.Scripts;
 using Mirror;
 using UnityEngine;
+using Random = System.Random;
 
 public class ItemManager : CustomNetworkBehaviour, IItemManager
 {
@@ -41,15 +41,27 @@ public class ItemManager : CustomNetworkBehaviour, IItemManager
     public void UseItem(PlayerSlot player, Guid itemId, Guid spawnPointId)
     {
         var spawnPoint =
-            SpawnPointsManager.GetSpawnPoint(player, spawnPointId);
+            SpawnPointsManager.GetSpawnPoint(spawnPointId);
         var item = _items[player].First(f => f.Id == itemId);
         var unit = UnitsDescriptor.NameUnitDescriptorDict[item.Name];
         ObjectManager.RegisterPrefab(unit);
         ObjectManager.Spawn(unit, spawnPoint.transform.position, spawnPoint.transform.rotation, o =>
         {
             var aa =
-                o.GetComponent<RandomShootingDude>();
-            aa.SetReady();
+                o.GetComponent<DudeBase>();
+            aa.Owner = player;
+            aa.SpawnPointId = spawnPointId;
+            aa.ShotDescriptor = new NetworkObjectDescriptor("prefabs/Shot", "shotkek", Guid.NewGuid());
+            var r = new Random();
+            var options =
+                new DudeOptionsBase()
+                {
+                    Cd = Convert.ToSingle(r.NextDouble() * 5 + 0.1f),
+                    HpRegeneration = 0,
+                    InaccuracyDegrees = Convert.ToSingle(r.NextDouble() * 90),
+                    MaxHp = 10,
+                };
+            aa.Options = options;
         }, null);
         _items[player] = _items[player].Where(w => w.Id != itemId).ToList();
         TargetRemoveItem(PlayersManager.GetPlayers().First(w => w.Slot == player).ConnectionInstance, itemId);

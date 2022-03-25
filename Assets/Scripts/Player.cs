@@ -104,8 +104,6 @@ namespace Assets.Scripts
 
         void FixedUpdate()
         {
-            // only let the local player control the racket.
-            // don't control other player's rackets
             if (isLocalPlayer)
             {
                 var axis =
