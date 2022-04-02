@@ -9,12 +9,14 @@ namespace Assets.Scripts
         [SerializeField] private TextView _textView;
 
         private bool IsReady =>
-            _isKeyReady && _isDescriptorReady && _isStateReady;
+            _isKeyReady && _isDescriptorReady && _isStateReady && _isOptionsReady;
         private bool _isStateReady = true;
         private bool _isKeyReady = false;
         private bool _isDescriptorReady = false;
+        private bool _isOptionsReady = false;
         private string _key;
         private NetworkObjectDescriptor _descriptor;
+        private NetworkObjectOptions _options;
 
         public event Action<PickableItem, PlayerSlot> PickedByPlayer;
 
@@ -48,6 +50,19 @@ namespace Assets.Scripts
             }
         }
 
+        /// <summary>
+        /// Server only
+        /// </summary>
+        public NetworkObjectOptions Options
+        {
+            get => _options;
+            set
+            {
+                _options = value;
+                _isOptionsReady = true;
+            }
+        }
+
         public override void OnStartClient()
         {
             GetComponent<Collider>().enabled = false;
@@ -75,6 +90,16 @@ namespace Assets.Scripts
         public void RpcSetKey(string key)
         {
             Key = key;
+        }
+
+        [Server]
+        public override void SrvApplyOptions(NetworkObjectOptions options)
+        {
+            var fullItemDescription = options.GetOptions<ItemOptions>();
+            RpcSetKey($"{fullItemDescription.dudeDescriptor.Key} + {fullItemDescription.dudeOptionsToSpawn.GetOptions()}");
+            Key = fullItemDescription.dudeDescriptor.Key;
+            Descriptor = fullItemDescription.dudeDescriptor;
+            Options = new NetworkObjectOptions(fullItemDescription.dudeOptionsToSpawn);
         }
     }
 }

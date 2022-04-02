@@ -1,6 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 
+/// <summary>
+/// Сущность Player
+/// Добавление/отключение и
+/// </summary>
+/// <typeparam name="T"></typeparam>
 public interface IPlayersManager<T>
 {
     event Action AllPlayersReady;
@@ -11,20 +16,12 @@ public interface IPlayersManager<T>
 
     event Action MoveToDefaultPositions;
 
-    /// <summary>
-    /// Check if any empty slot left and associate connection to it 
-    /// </summary>
-    /// <returns>Slot id</returns>
     void ReserveSlot(IClientToServerConnection<T> connection, PlayerSlot slot);
 
     PlayerSlot GetEmptySlot();
 
     void SetPlayerReady(PlayerSlot player);
 
-    /// <summary>
-    /// Remove connection from slot
-    /// </summary>
-    /// <returns>Slot id</returns>
     void ClearConnectionSlot(PlayerSlot slot);
 
     IClientToServerConnection<T> GetPlayer(Guid id);

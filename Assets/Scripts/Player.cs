@@ -16,7 +16,7 @@ namespace Assets.Scripts
         private IItemManager _itemManager;
         private PlayerInputManager _playerInputManager;
 
-        private List<NetworkObjectDescriptor> _items = new List<NetworkObjectDescriptor>();
+        private List<NetworkObjectInstanceDescriptor> _items = new List<NetworkObjectInstanceDescriptor>();
 
         [SerializeField] private Inventory _clientInventory;
 
@@ -83,7 +83,7 @@ namespace Assets.Scripts
         }
 
         [ClientCallback]
-        private void ItemManagerOnClientGotItem(NetworkObjectDescriptor obj)
+        private void ItemManagerOnClientGotItem(NetworkObjectInstanceDescriptor obj)
         {
             _items.Add(obj);
             _textView.SetText("");
@@ -162,7 +162,7 @@ namespace Assets.Scripts
                                         {
                                             if (spawnPoint.netIdentity.hasAuthority)
                                             {
-                                                Debug.Log($"{_items[key - 1].Name} Used");
+                                                Debug.Log($"{_items[key - 1].Id} Used");
                                                 CmdPlayerAttemptsToUseItem(_items[key - 1].Id, spawnPoint.Id);
                                             }
                                         }

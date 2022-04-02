@@ -82,4 +82,9 @@ public class CustomGameManager : CustomNetworkBehaviour, IGameManager
         transition.StartTransit();
         Debug.Log($"Starting transition");
     }
+
+    public override void SrvApplyOptions(NetworkObjectOptions options)
+    {
+        throw new System.NotImplementedException();
+    }
 }

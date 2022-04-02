@@ -2,9 +2,11 @@
 
 public interface IItemManager
 {
-    event Action<NetworkObjectDescriptor> ClientGotItem;
+    event Action<NetworkObjectInstanceDescriptor> ClientGotItem;
+
     event Action<Guid> ClientRemovedItem;
 
-    void SetItemToPlayer(PlayerSlot player, NetworkObjectDescriptor item);
+    void SetItemToPlayer(PlayerSlot player, FullItemDescriptor descriptor);
+
     void UseItem(PlayerSlot player, Guid itemId, Guid spawnPointId);
 }

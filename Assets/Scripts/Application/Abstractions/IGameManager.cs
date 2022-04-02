@@ -1,4 +1,5 @@
-﻿public interface IGameManager
+﻿using System;
+
+public interface IGameManager
 {
-    void SetState(GameState state);
 }

@@ -35,13 +35,21 @@ public class RoundState : CustomNetworkBehaviour, IGameState
         SpawnPointsManager.AddSpawnPointsToPlayers();
     }
 
+    [Server]
     private void PlayerInputManagerOnOnPlayerAttemptsToUseItem(PlayerSlot player, Guid itemId, Guid spawnPointId)
     {
+        Debug.Log($"Server checks if target spawn point {spawnPointId} is empty");
         var isEmpty = SpawnPointsManager.IsEmpty(spawnPointId);
 
+        Debug.Log($"Spawn point {spawnPointId} {(isEmpty ? "empty" : "not empty")}");
         if (isEmpty)
         {
             ItemManager.UseItem(player, itemId, spawnPointId);
         }
+    }
+
+    public override void SrvApplyOptions(NetworkObjectOptions options)
+    {
+        throw new NotImplementedException();
     }
 }

@@ -18,7 +18,7 @@ public class ChooseSpellState : CustomNetworkBehaviour, IGameState
 
     private Guid[] _playerIds;
     
-    private Dictionary<Guid, List<NetworkObjectDescriptor>> _itemsToChoose;
+    private Dictionary<Guid, List<FullItemDescriptor>> _itemsToChoose;
     private ItemsRepository _itemsRepository;
     private Dictionary<PlayerSlot, List<PickableItem>> _pickableItems = new Dictionary<PlayerSlot, List<PickableItem>>();
 
@@ -26,7 +26,7 @@ public class ChooseSpellState : CustomNetworkBehaviour, IGameState
     {
         _itemsRepository = FindObjectOfType<ItemsRepository>();
         _pickedItems = new Dictionary<PlayerSlot, bool>();
-        _itemsToChoose = new Dictionary<Guid, List<NetworkObjectDescriptor>>();
+        _itemsToChoose = new Dictionary<Guid, List<FullItemDescriptor>>();
     }
 
     [ServerCallback]
@@ -60,11 +60,15 @@ public class ChooseSpellState : CustomNetworkBehaviour, IGameState
         _pickedItems.Clear();
         PlayersManager.MovePlayersToDefaultPositions();
         _playerIds = PlayersManager.GetPlayers().Select(s => s.Id).ToArray();
-        _itemsToChoose = _playerIds.ToDictionary(k => k, v => new List<NetworkObjectDescriptor>());
+        _itemsToChoose = _playerIds.ToDictionary(k => k, v => new List<FullItemDescriptor>());
 
         foreach (var playerId in _playerIds)
         {
-            _itemsToChoose[playerId].AddRange(_itemsRepository.GetRandomItems(3));
+            _itemsToChoose[playerId].AddRange(_itemsRepository.GetRandomDescriptorsForPlayer(3, PlayersManager.GetPlayer(playerId).Slot).Select(s => new FullItemDescriptor()
+            {
+                Dummy = s.dummy,
+                Options = s.opt
+            }));
         }
 
         _isActive = true;
@@ -76,25 +80,21 @@ public class ChooseSpellState : CustomNetworkBehaviour, IGameState
             int count = 0;
             var player = PlayersManager.GetPlayer(item.Key);
             _pickableItems.Add(player.Slot, new List<PickableItem>());
-            foreach (var networkObjectDescriptor in item.Value)
+            foreach (var fullItemDescription in item.Value)
             {
                 var pos = MapDescriptor.SpellSpawnPoints[player.Slot][count];
-                //new Vector3(-3 - (float)item.Value.Count / 2 + localCount, 0, player.Slot == PlayerSlot.One ? -3 : 3);
                 count++;
 
-                ObjectManager.RegisterPrefab(networkObjectDescriptor);
-                var instance =
-                    ObjectManager.Spawn(networkObjectDescriptor, pos.Position, pos.Rotation, go =>
+                ObjectManager.RegisterPrefab(fullItemDescription.Dummy);
+                var gameObjectWithDescriptor =
+                    ObjectManager.Spawn(fullItemDescription.Dummy, fullItemDescription.Options, pos.Position, pos.Rotation, go =>
                     {
                         var pickableItem =
                             go.GetComponent<PickableItem>();
-                        pickableItem.RpcSetKey(networkObjectDescriptor.Name);
-                        pickableItem.Key = $"{networkObjectDescriptor.Name}";
-                        pickableItem.Descriptor = networkObjectDescriptor;
                         pickableItem.PickedByPlayer += PickableItemOnPickedByPlayer;
                     }, item.Key);
 
-                _pickableItems[player.Slot].Add(instance.GetComponent<PickableItem>());
+                _pickableItems[player.Slot].Add(gameObjectWithDescriptor.GameObject.GetComponent<PickableItem>());
             }
         }
     }
@@ -107,7 +107,11 @@ public class ChooseSpellState : CustomNetworkBehaviour, IGameState
             return;
         }
         _pickedItems.Add(slot, true);
-        ItemManager.SetItemToPlayer(slot, pi.Descriptor);
+        ItemManager.SetItemToPlayer(slot, new FullItemDescriptor()
+        {
+            Options = pi.Options,
+            Dummy = pi.Descriptor,
+        });
         RemovePickableItemsForPlayer(slot);
         if (typeof(PlayerSlot).GetEnumNames().All(a => Enum.TryParse(a, out PlayerSlot ps) ? (_pickedItems.ContainsKey(ps) && _pickedItems[ps]) : throw new Exception()))
         {
@@ -125,5 +129,10 @@ public class ChooseSpellState : CustomNetworkBehaviour, IGameState
         }
 
         _pickableItems[slot].Clear();
+    }
+
+    public override void SrvApplyOptions(NetworkObjectOptions options)
+    {
+        throw new NotImplementedException();
     }
 }

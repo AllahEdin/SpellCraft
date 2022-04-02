@@ -6,7 +6,7 @@ public interface ISpawnPointsManager
 
     void RemoveSpawnPointsToPlayers();
 
-    SpawnPoint GetSpawnPoint(Guid id);
+    SpawnPoint SrvGetSpawnPoint(Guid id);
 
     bool IsEmpty(Guid id);
 

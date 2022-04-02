@@ -8,7 +8,4 @@ public interface IClientToServerConnection<out T>
     PlayerSlot Slot { get; }
 
     Guid Id { get; }
-
-    void Send<TMessage>(TMessage message)
-        where TMessage : struct, NetworkMessage;
 }

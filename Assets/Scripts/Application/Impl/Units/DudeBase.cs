@@ -5,70 +5,39 @@ using Random = UnityEngine.Random;
 
 public abstract class DudeBase : CustomNetworkBehaviour
 {
-    private DudeOptionsBase _options;
-    private NetworkObjectDescriptor _shotDescriptor;
-
-    private PlayerSlot _owner;
-    private Guid _spawnPointId;
+    private PlayerSlot? _owner;
+    private Guid? _spawnPointId;
+    private DudeOptions _options;
     private float _hp;
 
-    public PlayerSlot Owner
+    public override void OnStartClient()
     {
-        get => _owner;
-        set
-        {
-            _isOwnerReady = true;
-            _owner = value;
-        }
+        GetComponent<Collider>().enabled = false;
+        base.OnStartClient();
     }
 
-    public Guid SpawnPointId
-    {
-        get => _spawnPointId;
-        set
-        {
-            _isSlotIdReady = true;
-            _spawnPointId = value;
-        }
-    }
+    private DudeOptions Options =>
+        _options ?? throw new Exception();
 
-    public DudeOptionsBase Options
-    {
-        get => _options;
-        set
-        {
-            _isOptionsReady = true;
-            _hp = value.MaxHp;
-            _options = value;
-        }
-    }
+    private PlayerSlot Owner =>
+        _owner ?? throw new Exception();
 
-    public NetworkObjectDescriptor ShotDescriptor
-    {
-        get => _shotDescriptor;
-        set
-        {
-            _isShotReady = true;
-            _shotDescriptor = value;
-        }
-    }
+    private Guid SpawnPointId =>
+        _spawnPointId ?? throw new Exception();
 
+    private bool _isReady;
     private float _currentTime;
-    private bool _isOptionsReady;
-    private bool _isShotReady;
-    private bool _isOwnerReady;
-    private bool _isSlotIdReady;
 
     [ServerCallback]
     private void FixedUpdate()
     {
-        if (_isOptionsReady && _isShotReady && _isOwnerReady && _isSlotIdReady)
+        if (_isReady)
         {
             _currentTime += Time.deltaTime;
 
-            _hp += _options.HpRegeneration * Time.deltaTime;
+            _hp += _options.regeneration * Time.deltaTime;
 
-            if (_currentTime > _options.Cd)
+            if (_currentTime > _options.cd)
             {
                 _currentTime = 0;
                 Shoot();
@@ -76,25 +45,10 @@ public abstract class DudeBase : CustomNetworkBehaviour
         }
     }
 
-    [Server]
-    private void Shoot()
-    {
-        var angle = Random.Range(-Options.InaccuracyDegrees, Options.InaccuracyDegrees);
-        ObjectManager.RegisterPrefab(_shotDescriptor);
-        var instance =
-            ObjectManager.Spawn(_shotDescriptor, transform.position, transform.rotation, o =>
-            {
-                var shot = o.GetComponent<CommonShot>();
-                shot.Rotate(angle);
-                shot.PlayerOwner = _owner;
-            }, null);
-    }
-
-
     [ServerCallback]
     private void OnTriggerEnter(Collider col)
     {
-        if (!_isOptionsReady || !_isOwnerReady)
+        if (!_isReady)
             return;
 
         var shot = col.transform.GetComponent<CommonShot>();
@@ -106,20 +60,57 @@ public abstract class DudeBase : CustomNetworkBehaviour
                 if (_hp <= 0)
                 {
                     SpawnPointsManager.SetIsEmpty(Owner, SpawnPointId, true);
+                    shot.HitTarget(this);
                     NetworkServer.Destroy(gameObject);
                 }
             }
         }
     }
 
-}
 
-public class DudeOptionsBase
-{
-    public float Cd;
-    public float InaccuracyDegrees;
-    public float MaxHp;
-    //public float Shield;
-    public float HpRegeneration;
-    //public float ShieldRegeneration;
+    [Server]
+    public override void SrvApplyOptions(NetworkObjectOptions options)
+    {
+        var dudeOptions = options.GetOptions<DudeOptions>();
+        _options = dudeOptions;
+        SrvCheckIfReady();
+    }
+
+    [Server]
+    public void SrvSetOwner(PlayerSlot owner)
+    {
+        _owner = owner;
+        SrvCheckIfReady();
+    }
+
+    [Server]
+    public void SrvSetSpawnPoint(Guid spawnPointId)
+    {
+        _spawnPointId = spawnPointId;
+        SrvCheckIfReady();
+    }
+
+    [Server]
+    private void SrvCheckIfReady()
+    {
+        _isReady =
+            _owner.HasValue && _spawnPointId.HasValue && _options != null;
+    }
+
+    [Server]
+    private void Shoot()
+    {
+        var angle = Random.Range(-Options.inaccuracy_angle, Options.inaccuracy_angle);
+        ObjectManager.RegisterPrefab(Options.shot_descriptor);
+        var instance =
+            ObjectManager.Spawn(Options.shot_descriptor, new NetworkObjectOptions(new ShotOptions()
+            {
+                dmg = 1
+            }), transform.position, transform.rotation, o =>
+            {
+                var shot = o.GetComponent<CommonShot>();
+                shot.Rotate(angle);
+                shot.PlayerOwner = Owner;
+            }, null);
+    }
 }

@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class SpawnPoint : CustomNetworkBehaviour
 {
-    [SyncVar(hook = nameof(SetId))]
     public Guid Id;
 
     public override void OnStartServer()
@@ -19,12 +18,25 @@ public class SpawnPoint : CustomNetworkBehaviour
         base.OnStartClient();
     }
 
-    [ClientCallback]
-    void SetId(Guid oldId, Guid newId)
+    [ClientRpc]
+    void RpcSetId(Guid newId)
     {
+        Debug.Log($"Spawn point id has set to {newId.ToString()}");
+
+        Id = newId;
         if (!newId.Equals(Guid.Empty))
         {
             GetComponent<Collider>().enabled = true;
         }
+    }
+    
+    [Server]
+    public override void SrvApplyOptions(NetworkObjectOptions options)
+    {
+        Debug.Log($"Spawn point with options : {options.JsonOptions}");
+        var spawnPointOptions = options.GetOptions<SpawnPointOptions>();
+        var guidId = Guid.Parse(spawnPointOptions.id);
+        Id = guidId;
+        RpcSetId(guidId);
     }
 }

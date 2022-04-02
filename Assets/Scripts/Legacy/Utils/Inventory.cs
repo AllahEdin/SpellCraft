@@ -9,7 +9,7 @@ public class Inventory : CustomNetworkBehaviour
 {
     private class ItemWithDescriptor
     {
-        public ItemWithDescriptor(GameObject gameObject, NetworkObjectDescriptor descriptor)
+        public ItemWithDescriptor(GameObject gameObject, NetworkObjectInstanceDescriptor descriptor)
         {
             ItemGO = gameObject;
             Descriptor = descriptor;
@@ -17,7 +17,7 @@ public class Inventory : CustomNetworkBehaviour
 
         public GameObject ItemGO { get; }
 
-        public NetworkObjectDescriptor Descriptor { get; }
+        public NetworkObjectInstanceDescriptor Descriptor { get; }
     }
 
     [SerializeField] private GameObject _contentGameObject;
@@ -39,12 +39,12 @@ public class Inventory : CustomNetworkBehaviour
     }
 
     [ClientCallback]
-    public void AddItem(NetworkObjectDescriptor objectDescriptor)
+    public void AddItem(NetworkObjectInstanceDescriptor objectDescriptor)
     {
         var go = Instantiate(_inventoryItemPrefab, _contentGameObject.transform);
         _items.Add(new ItemWithDescriptor(go, objectDescriptor));
         var text = go.GetComponentInChildren<Text>();
-        text.text = objectDescriptor.Name;
+        text.text = objectDescriptor.Id.ToString();
     }
 
     [ClientCallback]
@@ -53,5 +53,10 @@ public class Inventory : CustomNetworkBehaviour
         var target = _items.First(f => f.Descriptor.Id == id);
         Destroy(target.ItemGO);
         _items.Remove(target);
+    }
+
+    public override void SrvApplyOptions(NetworkObjectOptions options)
+    {
+        throw new NotImplementedException();
     }
 }

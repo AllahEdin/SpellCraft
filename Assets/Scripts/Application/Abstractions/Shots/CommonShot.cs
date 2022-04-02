@@ -7,7 +7,7 @@ public class CommonShot : CustomNetworkBehaviour
 
     public float Dmg => _dmg;
 
-    [SerializeField] private float _dmg;
+    private float _dmg;
     [SerializeField] private float _speed;
     [SerializeField] private float _lifetime;
 
@@ -47,5 +47,18 @@ public class CommonShot : CustomNetworkBehaviour
     {
         _angle = angle;
         _needRotate = true;
+    }
+
+    [Server]
+    public void HitTarget(DudeBase dude)
+    {
+        NetworkServer.Destroy(gameObject);
+    }
+
+    [Server]
+    public override void SrvApplyOptions(NetworkObjectOptions options)
+    {
+        var shotOptions = options.GetOptions<ShotOptions>();
+        _dmg = shotOptions.dmg;
     }
 }

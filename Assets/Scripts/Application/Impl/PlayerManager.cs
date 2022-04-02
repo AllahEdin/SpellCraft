@@ -19,8 +19,6 @@ public class PlayerManager : NetworkBehaviour, IPlayersManager<NetworkConnection
 
     private Dictionary<PlayerSlot, IClientToServerConnection<NetworkConnection>> _connections = new Dictionary<PlayerSlot, IClientToServerConnection<NetworkConnection>>();
 
-    [SerializeField] private int _maxPlayers;
-
     private void Awake()
     {
         _playerStatuses = typeof(PlayerSlot).GetEnumNames()

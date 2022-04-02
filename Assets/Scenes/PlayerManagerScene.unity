@@ -306,12 +306,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 283131506}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c89aa741b0efdc34eb302ea2c730f26d, type: 3}
+  m_Script: {fileID: 11500000, guid: 9a8cc50246379f64c92d5809a88f16f4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   syncMode: 0
   syncInterval: 0.1
-  _maxPlayers: 2
 --- !u!114 &283131508
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -375,9 +374,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   syncMode: 0
   syncInterval: 0.1
-  _spawnPointPrefab:
+  _spawnPointDescriptor:
     _path: prefabs/SpawnPoint
-    _name: SpawnPoint
+    _key: sp
   _player1SpawnPoints:
   - {x: -2, y: 0, z: -2}
   - {x: 0, y: 0, z: -2}
@@ -866,14 +865,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 689788761}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 320f94723222a274e8b7e68313ed2169, type: 3}
+  m_Script: {fileID: 11500000, guid: 904854c5172bffe418851f5010a606da, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   _itemDescriptors:
   - _path: prefabs/item1
-    _name: A
+    _key: 
   - _path: prefabs/item1
-    _name: B
+    _key: 
+  - _path: prefabs/item1
+    _key: 
 --- !u!4 &689788763
 Transform:
   m_ObjectHideFlags: 0
@@ -1002,7 +1003,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2103447439}
   m_HandleRect: {fileID: 2103447438}
   m_Direction: 0
-  m_Value: 0
+  m_Value: 1
   m_Size: 1
   m_NumberOfSteps: 0
   m_OnValueChanged:
@@ -1319,8 +1320,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1211736971}
-  - component: {fileID: 1211736970}
   - component: {fileID: 1211736969}
+  - component: {fileID: 1211736970}
   - component: {fileID: 1211736968}
   m_Layer: 0
   m_Name: NetworkManager
@@ -1381,7 +1382,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1211736967}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7f8d094561c1d134d8cee39a1b1c24f0, type: 3}
+  m_Script: {fileID: 11500000, guid: fd7fd2cedbd081843b7259cc24076203, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   dontDestroyOnLoad: 1
@@ -1916,7 +1917,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1903672214}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4de0e299869111f4995c49117cc52b3a, type: 3}
+  m_Script: {fileID: 11500000, guid: 88556ba913c325249be9969cd4b526aa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   syncMode: 0

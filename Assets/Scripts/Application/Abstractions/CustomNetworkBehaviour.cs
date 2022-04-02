@@ -22,4 +22,6 @@ public abstract class CustomNetworkBehaviour : NetworkBehaviour
 
     protected ISpawnPointsManager SpawnPointsManager =>
         _spawnPointsManager ??= FindObjectOfType<SpawnPointsManager>();
+
+    public abstract void SrvApplyOptions(NetworkObjectOptions options);
 }

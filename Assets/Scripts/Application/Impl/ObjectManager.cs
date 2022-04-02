@@ -40,7 +40,11 @@ public class ObjectManager : CustomNetworkBehaviour, IObjectManager
     }
 
     [Server]
-    public GameObject Spawn(NetworkObjectDescriptor objectToSpawn, Vector3 pos, Quaternion rot, Action<GameObject> configureOnServerAfterSpawn, Guid? playerAuthority)
+    public GameObjectWithDescriptor Spawn(NetworkObjectDescriptor descriptor, 
+        NetworkObjectOptions options,
+        Vector3 pos, Quaternion rot,
+        Action<GameObject> configureOnServerAfterSpawn, 
+        Guid? playerAuthority)
     {
         NetworkConnection connection = null;
 
@@ -57,7 +61,7 @@ public class ObjectManager : CustomNetworkBehaviour, IObjectManager
         }
 
         var path =
-            objectToSpawn.Path;
+            descriptor.Path;
 
         Debug.Log($"Server spawning prefab {path}");
 
@@ -65,6 +69,8 @@ public class ObjectManager : CustomNetworkBehaviour, IObjectManager
             Resources.Load<GameObject>(path);
 
         var instance = Instantiate(go, pos, rot);
+
+        var instanceDescriptor = new NetworkObjectInstanceDescriptor(Guid.NewGuid(), descriptor, options);
 
         if (playerAuthority != null)
         {
@@ -75,7 +81,15 @@ public class ObjectManager : CustomNetworkBehaviour, IObjectManager
             NetworkServer.Spawn(instance);
         }
 
+        instance.GetComponent<CustomNetworkBehaviour>().SrvApplyOptions(options);
+
         configureOnServerAfterSpawn?.Invoke(instance);
-        return instance;
+
+        return new GameObjectWithDescriptor(instanceDescriptor, instance);
+    }
+
+    public override void SrvApplyOptions(NetworkObjectOptions options)
+    {
+        throw new NotImplementedException();
     }
 }
