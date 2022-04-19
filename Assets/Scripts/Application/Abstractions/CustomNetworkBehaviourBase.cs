@@ -1,6 +1,6 @@
 using Mirror;
 
-public abstract class CustomNetworkBehaviour : NetworkBehaviour
+public abstract class CustomNetworkBehaviourBase : NetworkBehaviour
 {
     private IPlayerInputManager _playerInputManager;
     private ISpawnPointsManager _spawnPointsManager;
@@ -22,6 +22,6 @@ public abstract class CustomNetworkBehaviour : NetworkBehaviour
 
     protected ISpawnPointsManager SpawnPointsManager =>
         _spawnPointsManager ??= FindObjectOfType<SpawnPointsManager>();
-
-    public abstract void SrvApplyOptions(NetworkObjectOptions options);
 }
+
+// ReSharper disable once IdentifierTypo

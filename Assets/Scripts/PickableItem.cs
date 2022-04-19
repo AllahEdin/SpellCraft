@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace Assets.Scripts
 {
-    public class PickableItem : CustomNetworkBehaviour
+    public class PickableItem : SpawnableCustomNetworkBehaviourBase
     {
         [SerializeField] private TextView _textView;
 

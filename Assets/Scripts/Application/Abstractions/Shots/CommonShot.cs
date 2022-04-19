@@ -1,7 +1,8 @@
-﻿using Mirror;
+﻿using System;
+using Mirror;
 using UnityEngine;
 
-public class CommonShot : CustomNetworkBehaviour
+public class CommonShot : SpawnableCustomNetworkBehaviourBase
 {
     public PlayerSlot PlayerOwner { get; set; }
 
@@ -11,9 +12,12 @@ public class CommonShot : CustomNetworkBehaviour
     [SerializeField] private float _speed;
     [SerializeField] private float _lifetime;
 
+    private IGameManager _gameManager;
+
     private float _currentTime;
     private bool _needRotate;
     private float _angle;
+    private bool _active;
 
     public override void OnStartClient()
     {
@@ -21,9 +25,19 @@ public class CommonShot : CustomNetworkBehaviour
         base.OnStartClient();
     }
 
+    public override void OnStartServer()
+    {
+        _gameManager = FindObjectOfType<CustomGameManager>();
+        _gameManager.SrvStateChanged += SrvGameManagerOnSrvStateChanged;
+        base.OnStartServer();
+    }
+
     [ServerCallback]
     private void FixedUpdate()
     {
+        if (!_active)
+            return;
+
         if (_needRotate)
         {
             transform.RotateAround(transform.position, Vector3.up, _angle);
@@ -43,7 +57,32 @@ public class CommonShot : CustomNetworkBehaviour
     }
 
     [Server]
-    public void Rotate(float angle)
+    private void SrvGameManagerOnSrvStateChanged(GameState state)
+    {
+        switch (state)
+        {
+            case GameState.WaitingForConnections:
+                _active = false;
+                break;
+            case GameState.ChooseSpell:
+                _active = false;
+                break;
+            case GameState.Round:
+                _active = true;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(state), state, null);
+        }
+    }
+
+    [Server]
+    public void SrvSetActive(bool active)
+    {
+        _active = active;
+    }
+
+    [Server]
+    public void SrvRotate(float angle)
     {
         _angle = angle;
         _needRotate = true;

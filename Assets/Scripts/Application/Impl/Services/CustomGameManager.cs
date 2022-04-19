@@ -1,10 +1,14 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Mirror;
 using UnityEngine;
 
-public class CustomGameManager : CustomNetworkBehaviour, IGameManager
+public class CustomGameManager : CustomNetworkBehaviourBase, IGameManager
 {
+
+    public event Action<GameState> SrvStateChanged;
+
     private GameState _currentState;
     private IGameState _activeGameState;
 
@@ -70,6 +74,7 @@ public class CustomGameManager : CustomNetworkBehaviour, IGameManager
     [ServerCallback]
     public void SetState(GameState state)
     {
+        SrvStateChanged?.Invoke(state);
         Debug.Log($"Starting state {state.ToString()}");
         var transition =
             _transitions.FirstOrDefault(f => f.From == _currentState && f.To == state) ??
@@ -83,8 +88,4 @@ public class CustomGameManager : CustomNetworkBehaviour, IGameManager
         Debug.Log($"Starting transition");
     }
 
-    public override void SrvApplyOptions(NetworkObjectOptions options)
-    {
-        throw new System.NotImplementedException();
-    }
 }

@@ -8,11 +8,12 @@ namespace Assets.Scripts
 {
     public class Player : NetworkBehaviour
     {
+        public Action<PlayerSlot> OnDefaultPosition;
+
         public float speed = 1;
 
         public PlayerSlot Slot { get; private set; }
-
-        private IPlayersManager<NetworkConnection> _playersManager;
+        
         private IItemManager _itemManager;
         private PlayerInputManager _playerInputManager;
 
@@ -22,85 +23,6 @@ namespace Assets.Scripts
 
         [SerializeField] private TextView _textView;
 
-        public override void OnStartServer()
-        {
-            Debug.Log("Awake server player");
-            base.OnStartServer();
-            _itemManager = FindObjectOfType<ItemManager>();
-            
-            _playersManager = FindObjectOfType<PlayerManager>();
-            _playersManager.MoveToDefaultPositions += PlayersManagerOnMoveToDefaultPositions;
-
-            _playerInputManager = FindObjectOfType<PlayerInputManager>();
-            _clientInventory = FindObjectOfType<Inventory>();
-            DestroyInventoryView();
-        }
-
-        [Server]
-        private void PlayersManagerOnMoveToDefaultPositions()
-        {
-            foreach (var player in _playersManager.GetPlayers())
-            {
-                TargetMoveToPosition(player.ConnectionInstance, MapDescriptor.Areas[player.Slot].Center);   
-            }
-        }
-
-        [TargetRpc]
-        public void TargetMoveToPosition(NetworkConnection connection, Vector3 pos)
-        {
-            if (isLocalPlayer)
-            {
-                gameObject.transform.position = pos;
-            }
-        }
-
-        public override void OnStartLocalPlayer()
-        {
-            Debug.Log("Awake local player");
-            base.OnStartLocalPlayer();
-            _itemManager = FindObjectOfType<ItemManager>();
-            _clientInventory = FindObjectOfType<Inventory>();
-            _itemManager.ClientGotItem += ItemManagerOnClientGotItem;
-            _itemManager.ClientRemovedItem += ItemManagerOnClientRemovedItem;
-        }
-
-        [ServerCallback]
-        private void DestroyInventoryView()
-        {
-            _clientInventory?.DestroyView();
-        }
-
-        [Server]
-        public void SetSlot(PlayerSlot playerSlot)
-        {
-            Slot = playerSlot;
-        }
-
-        [TargetRpc]
-        public void TargetSetSlot(NetworkConnection connection, PlayerSlot playerSlot)
-        {
-            Slot = playerSlot;
-        }
-
-        [ClientCallback]
-        private void ItemManagerOnClientGotItem(NetworkObjectInstanceDescriptor obj)
-        {
-            _items.Add(obj);
-            _textView.SetText("");
-        }
-
-        [ClientCallback]
-        private void ItemManagerOnClientRemovedItem(Guid id)
-        {
-            _items = _items.Where(w => w.Id != id).ToList();
-        }
-
-        [Command]
-        private void CmdPlayerAttemptsToUseItem(Guid itemId, Guid spawnPointId)
-        {
-            Debug.Log($"Server uses item {itemId} on sp {spawnPointId}");
-            _playerInputManager.RaisePlayerUseItemEvent(Slot, itemId, spawnPointId);
-        }
 
         void FixedUpdate()
         {
@@ -175,6 +97,88 @@ namespace Assets.Scripts
                     }
                 }
             }
+        }
+
+        [ServerCallback]
+        private void OnTriggerEnter(Collider col)
+        {
+            var defaultPlayerPosition = col.transform.GetComponent<DefaultPlayerPosition>();
+            if (defaultPlayerPosition != null)
+            {
+                if (Slot == defaultPlayerPosition.SrvGetPlayerSlot())
+                {
+                    Debug.Log($"Player {Slot} ha entered default position");
+                    OnDefaultPosition?.Invoke(Slot);
+                }
+            }
+        }
+
+        public override void OnStartServer()
+        {
+            Debug.Log("Awake server player");
+            base.OnStartServer();
+            _itemManager = FindObjectOfType<ItemManager>();
+            _playerInputManager = FindObjectOfType<PlayerInputManager>();
+            _clientInventory = FindObjectOfType<Inventory>();
+            DestroyInventoryView();
+        }
+
+        public override void OnStartLocalPlayer()
+        {
+            Debug.Log("Awake local player");
+            base.OnStartLocalPlayer();
+            _itemManager = FindObjectOfType<ItemManager>();
+            _clientInventory = FindObjectOfType<Inventory>();
+            _itemManager.ClientGotItem += ItemManagerOnClientGotItem;
+            _itemManager.ClientRemovedItem += ItemManagerOnClientRemovedItem;
+        }
+
+        [TargetRpc]
+        public void TargetMoveToPosition(NetworkConnection connection, Vector3 pos)
+        {
+            if (isLocalPlayer)
+            {
+                gameObject.transform.position = pos;
+                Debug.Log($"Player {Slot} on default position");
+            }
+        }
+
+        [ServerCallback]
+        private void DestroyInventoryView()
+        {
+            _clientInventory?.DestroyView();
+        }
+
+        [Server]
+        public void SetSlot(PlayerSlot playerSlot)
+        {
+            Slot = playerSlot;
+        }
+
+        [TargetRpc]
+        public void TargetSetSlot(NetworkConnection connection, PlayerSlot playerSlot)
+        {
+            Slot = playerSlot;
+        }
+
+        [ClientCallback]
+        private void ItemManagerOnClientGotItem(NetworkObjectInstanceDescriptor obj)
+        {
+            _items.Add(obj);
+            _textView.SetText("");
+        }
+
+        [ClientCallback]
+        private void ItemManagerOnClientRemovedItem(Guid id)
+        {
+            _items = _items.Where(w => w.Id != id).ToList();
+        }
+
+        [Command]
+        private void CmdPlayerAttemptsToUseItem(Guid itemId, Guid spawnPointId)
+        {
+            Debug.Log($"Server uses item {itemId} on sp {spawnPointId}");
+            _playerInputManager.RaisePlayerUseItemEvent(Slot, itemId, spawnPointId);
         }
     }
 }

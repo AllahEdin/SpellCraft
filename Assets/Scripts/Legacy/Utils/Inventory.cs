@@ -5,7 +5,7 @@ using Mirror;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class Inventory : CustomNetworkBehaviour
+public class Inventory : CustomNetworkBehaviourBase
 {
     private class ItemWithDescriptor
     {
@@ -53,10 +53,5 @@ public class Inventory : CustomNetworkBehaviour
         var target = _items.First(f => f.Descriptor.Id == id);
         Destroy(target.ItemGO);
         _items.Remove(target);
-    }
-
-    public override void SrvApplyOptions(NetworkObjectOptions options)
-    {
-        throw new NotImplementedException();
     }
 }

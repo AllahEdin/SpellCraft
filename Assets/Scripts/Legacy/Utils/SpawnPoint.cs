@@ -2,7 +2,7 @@
 using Mirror;
 using UnityEngine;
 
-public class SpawnPoint : CustomNetworkBehaviour
+public class SpawnPoint : SpawnableCustomNetworkBehaviourBase
 {
     public Guid Id;
 

@@ -4,11 +4,9 @@
     using Mirror;
     using UnityEngine;
 
-    public class SpawnPointsManager : CustomNetworkBehaviour, ISpawnPointsManager
+    public class SpawnPointsManager : CustomNetworkBehaviourBase, ISpawnPointsManager
     {
         [SerializeField] private NetworkObjectDescriptor _spawnPointDescriptor;
-        [SerializeField] private List<Vector3> _player1SpawnPoints;
-        [SerializeField] private List<Vector3> _player2SpawnPoints;
 
         private readonly List<GameObject> _spawnPoints = new List<GameObject>();
 
@@ -35,14 +33,9 @@
                     .ToDictionary(k => k, v => new List<SpawnPoint>());
         }
 
-        [Server]
-        public override void SrvApplyOptions(NetworkObjectOptions options)
-        {
-            throw new NotImplementedException();
-        }
 
         [Server]
-        public void AddSpawnPointsToPlayers()
+        public void SrvAddSpawnPointsToPlayers()
         {
             foreach (var playerSlot in typeof(PlayerSlot).GetEnumNames().Select(s =>
                          Enum.TryParse(s, out PlayerSlot slot) ? slot : throw new Exception()))
@@ -50,13 +43,8 @@
                 var idCounter = 0;
                 ObjectManager.RegisterPrefab(_spawnPointDescriptor);
 
-                IEnumerator<Vector3> enumerator = playerSlot switch
-                {
-                    PlayerSlot.One => _player1SpawnPoints.GetEnumerator(),
-                    PlayerSlot.Two => _player2SpawnPoints.GetEnumerator(),
-                    _ => throw new ArgumentOutOfRangeException()
-                };
-
+                using IEnumerator<Vector3> enumerator = MapDescriptor.UnitSpawnPoints[playerSlot].Select(s => s.Position).GetEnumerator();
+                
                 while (enumerator.MoveNext())
                 {
                     var localCounter = idCounter;
@@ -66,12 +54,12 @@
                     }
 
                     var gameObjectWithDescriptor =
-                        ObjectManager.Spawn(_spawnPointDescriptor, new NetworkObjectOptions(new SpawnPointOptions()
+                        ObjectManager.SrvSpawn(_spawnPointDescriptor, new NetworkObjectOptions(new SpawnPointOptions()
                             {
                                 id = _spawnPointsIds[playerSlot][localCounter].ToString()
                             }) , enumerator.Current,
                             playerSlot == PlayerSlot.One ? Quaternion.identity : Quaternion.Euler(0, 180, 0),
-                            o => { }, PlayersManager.GetPlayers().First(f => f.Slot == playerSlot).Id);
+                            o => { }, PlayersManager.SrvGetPlayers().First(f => f.Slot == playerSlot).Id);
 
                     var spawnPoint = gameObjectWithDescriptor.GameObject.GetComponent<SpawnPoint>();
                     _spawnPointsDictionary[playerSlot].Add(spawnPoint);
@@ -82,7 +70,7 @@
         }
 
         [Server]
-        public void RemoveSpawnPointsToPlayers()
+        public void SrvRemoveSpawnPointsToPlayers()
         {
             foreach (var spawnPoint in _spawnPoints)
             {
@@ -101,13 +89,14 @@
             return _spawnPointsDictionary.SelectMany(s => s.Value).First(f => f.Id == id);
         }
 
-        public bool IsEmpty(Guid id)
+        [Server]
+        public bool SrvIsEmpty(Guid id)
         {
             return _slotsUsed.SelectMany(s => s.Value).FirstOrDefault(f => f == id).Equals(Guid.Empty);
         }
 
         [Server]
-        public void SetIsEmpty(PlayerSlot playerSlot, Guid id, bool isEmpty)
+        public void SrvSetIsEmpty(PlayerSlot playerSlot, Guid id, bool isEmpty)
         {
             if (!isEmpty)
             {

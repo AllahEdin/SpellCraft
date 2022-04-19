@@ -26,7 +26,7 @@
         Debug.Log($"Player connected");
 
         var slot =
-            PlayersManager.GetEmptySlot();
+            PlayersManager.SrvGetEmptySlot();
 
         Debug.Log($"Got empty slot {slot}");
 
@@ -34,7 +34,7 @@
 
         Debug.Log($"Connection created {connection.Id}");
 
-        PlayersManager.ReserveSlot(connection, slot);
+        PlayersManager.SrvReserveSlot(connection, slot);
 
         Debug.Log($"Reserved slot {slot}");
 
@@ -62,7 +62,7 @@
                     player.GetComponent<Player>();
                 playerComponent.SetSlot(slot);
                 playerComponent.TargetSetSlot(conn, slot);
-                PlayersManager.SetPlayerReady(slot);
+                PlayersManager.SrvSetPlayerReady(slot, playerComponent);
             }
         }
     }
@@ -74,7 +74,7 @@
         {
             if (_slotMappings.TryGetValue(existingConnection, out var slot))
             {
-                PlayersManager.ClearConnectionSlot(slot);
+                PlayersManager.SrvClearConnectionSlot(slot);
                 _slotMappings.Remove(existingConnection);
                 _connectionMappings.Remove(conn.connectionId);
             }

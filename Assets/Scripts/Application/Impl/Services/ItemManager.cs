@@ -5,7 +5,7 @@ using Mirror;
 using UnityEngine;
 using Random = System.Random;
 
-public class ItemManager : CustomNetworkBehaviour, IItemManager
+public class ItemManager : CustomNetworkBehaviourBase, IItemManager
 {
     [SerializeField] private TextView _textView;
 
@@ -28,27 +28,27 @@ public class ItemManager : CustomNetworkBehaviour, IItemManager
     }
 
     [Server]
-    public void SetItemToPlayer(PlayerSlot player, FullItemDescriptor descriptor)
+    public void SrvSetItemToPlayer(PlayerSlot player, FullItemDescriptor descriptor)
     {
         var itemId = Guid.NewGuid();
         Debug.Log($"Item Id set to {itemId}");
         _items[player].Add(new NetworkObjectInstanceDescriptor(itemId, descriptor.Dummy, descriptor.Options));
         _textView.SetText(string.Join("\n", _items.Select(s => s.Value).Select(s => string.Join(",", s))));
         Debug.Log($"Added item to player in slot {player}");
-        TargetSetItem(PlayersManager.GetPlayers().First(w => w.Slot == player).ConnectionInstance,
+        TargetSetItem(PlayersManager.SrvGetPlayers().First(w => w.Slot == player).ConnectionInstance,
             itemId,
             descriptor);
     }
 
     [Server]
-    public void UseItem(PlayerSlot player, Guid itemId, Guid spawnPointId)
+    public void SrvUseItem(PlayerSlot player, Guid itemId, Guid spawnPointId)
     {
         Debug.Log($"Server start using an item {itemId} for player {player} on spawn poitn {spawnPointId}");
         var spawnPoint =
             SpawnPointsManager.SrvGetSpawnPoint(spawnPointId);
         var item = _items[player].First(f => f.Id == itemId);
         ObjectManager.RegisterPrefab(item.Descriptor);
-        ObjectManager.Spawn(item.Descriptor, item.Options, spawnPoint.transform.position, spawnPoint.transform.rotation, o =>
+        ObjectManager.SrvSpawn(item.Descriptor, item.Options, spawnPoint.transform.position, spawnPoint.transform.rotation, o =>
         {
             var aa =
                 o.GetComponent<DudeBase>();
@@ -56,7 +56,7 @@ public class ItemManager : CustomNetworkBehaviour, IItemManager
             aa.SrvSetSpawnPoint(spawnPointId);
         }, null);
         _items[player] = _items[player].Where(w => w.Id != itemId).ToList();
-        TargetRemoveItem(PlayersManager.GetPlayers().First(w => w.Slot == player).ConnectionInstance, itemId);
+        TargetRemoveItem(PlayersManager.SrvGetPlayers().First(w => w.Slot == player).ConnectionInstance, itemId);
     }
 
     [TargetRpc]
@@ -73,8 +73,4 @@ public class ItemManager : CustomNetworkBehaviour, IItemManager
         ClientRemovedItem?.Invoke(id);
     }
 
-    public override void SrvApplyOptions(NetworkObjectOptions options)
-    {
-        throw new NotImplementedException();
-    }
 }

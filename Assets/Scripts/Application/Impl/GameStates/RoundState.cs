@@ -2,7 +2,7 @@
 using Mirror;
 using UnityEngine;
 
-public class RoundState : CustomNetworkBehaviour, IGameState
+public class RoundState : CustomNetworkBehaviourBase, IGameState
 {
     public event Action<IGameState> CompleteState;
     public GameState State => GameState.Round;
@@ -20,7 +20,7 @@ public class RoundState : CustomNetworkBehaviour, IGameState
             if (_currentTime > 10)
             {
                 PlayerInputManager.OnPlayerAttemptsToUseItem -= PlayerInputManagerOnOnPlayerAttemptsToUseItem;
-                SpawnPointsManager.RemoveSpawnPointsToPlayers();
+                SpawnPointsManager.SrvRemoveSpawnPointsToPlayers();
                 CompleteState?.Invoke(this);
                 _isActive = false;
             }
@@ -32,24 +32,20 @@ public class RoundState : CustomNetworkBehaviour, IGameState
         _isActive = true;
         _currentTime = 0;
         PlayerInputManager.OnPlayerAttemptsToUseItem += PlayerInputManagerOnOnPlayerAttemptsToUseItem;
-        SpawnPointsManager.AddSpawnPointsToPlayers();
+        SpawnPointsManager.SrvAddSpawnPointsToPlayers();
     }
 
     [Server]
     private void PlayerInputManagerOnOnPlayerAttemptsToUseItem(PlayerSlot player, Guid itemId, Guid spawnPointId)
     {
         Debug.Log($"Server checks if target spawn point {spawnPointId} is empty");
-        var isEmpty = SpawnPointsManager.IsEmpty(spawnPointId);
+        var isEmpty = SpawnPointsManager.SrvIsEmpty(spawnPointId);
 
         Debug.Log($"Spawn point {spawnPointId} {(isEmpty ? "empty" : "not empty")}");
         if (isEmpty)
         {
-            ItemManager.UseItem(player, itemId, spawnPointId);
+            ItemManager.SrvUseItem(player, itemId, spawnPointId);
         }
     }
 
-    public override void SrvApplyOptions(NetworkObjectOptions options)
-    {
-        throw new NotImplementedException();
-    }
 }

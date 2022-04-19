@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 
-public class ObjectManager : CustomNetworkBehaviour, IObjectManager
+public class ObjectManager : CustomNetworkBehaviourBase, IObjectManager
 {
     private readonly List<string> _registeredPrefabs =
         new List<string>();
@@ -33,14 +33,14 @@ public class ObjectManager : CustomNetworkBehaviour, IObjectManager
 
         //Debug.Log($"Server registering prefab {path}");
 
-        foreach (var clientToServerConnection in PlayersManager.GetPlayers())
+        foreach (var clientToServerConnection in PlayersManager.SrvGetPlayers())
         {
             TargetRegisterPrefab(clientToServerConnection.ConnectionInstance, path);
         }
     }
 
     [Server]
-    public GameObjectWithDescriptor Spawn(NetworkObjectDescriptor descriptor, 
+    public GameObjectWithDescriptor SrvSpawn(NetworkObjectDescriptor descriptor, 
         NetworkObjectOptions options,
         Vector3 pos, Quaternion rot,
         Action<GameObject> configureOnServerAfterSpawn, 
@@ -52,7 +52,7 @@ public class ObjectManager : CustomNetworkBehaviour, IObjectManager
         {
             try
             {
-                connection = PlayersManager.GetPlayer(playerAuthority.Value).ConnectionInstance;
+                connection = PlayersManager.SrvGetPlayer(playerAuthority.Value).ConnectionInstance;
             }
             catch (Exception)
             {
@@ -81,15 +81,10 @@ public class ObjectManager : CustomNetworkBehaviour, IObjectManager
             NetworkServer.Spawn(instance);
         }
 
-        instance.GetComponent<CustomNetworkBehaviour>().SrvApplyOptions(options);
+        instance.GetComponent<SpawnableCustomNetworkBehaviourBase>().SrvApplyOptions(options);
 
         configureOnServerAfterSpawn?.Invoke(instance);
 
         return new GameObjectWithDescriptor(instanceDescriptor, instance);
-    }
-
-    public override void SrvApplyOptions(NetworkObjectOptions options)
-    {
-        throw new NotImplementedException();
     }
 }

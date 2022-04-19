@@ -3,12 +3,42 @@ using Mirror;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-public abstract class DudeBase : CustomNetworkBehaviour
+public abstract class DudeBase : SpawnableCustomNetworkBehaviourBase
 {
     private PlayerSlot? _owner;
     private Guid? _spawnPointId;
     private DudeOptions _options;
     private float _hp;
+    private IGameManager _gameManager;
+    private bool _active;
+
+    protected bool Active => _active;
+
+    public override void OnStartServer()
+    {
+        _gameManager = FindObjectOfType<CustomGameManager>();
+        _gameManager.SrvStateChanged += SrvGameManagerOnSrvStateChanged;
+        base.OnStartServer();
+    }
+
+    [Server]
+    private void SrvGameManagerOnSrvStateChanged(GameState state)
+    {
+        switch (state)
+        {
+            case GameState.WaitingForConnections:
+                _active = false;
+                break;
+            case GameState.ChooseSpell:
+                _active = false;
+                break;
+            case GameState.Round:
+                _active = true;
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(state), state, null);
+        }
+    }
 
     public override void OnStartClient()
     {
@@ -31,7 +61,7 @@ public abstract class DudeBase : CustomNetworkBehaviour
     [ServerCallback]
     private void FixedUpdate()
     {
-        if (_isReady)
+        if (_isReady && _active)
         {
             _currentTime += Time.deltaTime;
 
@@ -40,7 +70,7 @@ public abstract class DudeBase : CustomNetworkBehaviour
             if (_currentTime > _options.cd)
             {
                 _currentTime = 0;
-                Shoot();
+                SrvShoot();
             }
         }
     }
@@ -48,7 +78,7 @@ public abstract class DudeBase : CustomNetworkBehaviour
     [ServerCallback]
     private void OnTriggerEnter(Collider col)
     {
-        if (!_isReady)
+        if (!_isReady || !_active)
             return;
 
         var shot = col.transform.GetComponent<CommonShot>();
@@ -59,8 +89,9 @@ public abstract class DudeBase : CustomNetworkBehaviour
                 _hp -= shot.Dmg;
                 if (_hp <= 0)
                 {
-                    SpawnPointsManager.SetIsEmpty(Owner, SpawnPointId, true);
+                    SpawnPointsManager.SrvSetIsEmpty(Owner, SpawnPointId, true);
                     shot.HitTarget(this);
+                    _gameManager.SrvStateChanged -= SrvGameManagerOnSrvStateChanged;
                     NetworkServer.Destroy(gameObject);
                 }
             }
@@ -98,18 +129,19 @@ public abstract class DudeBase : CustomNetworkBehaviour
     }
 
     [Server]
-    private void Shoot()
+    protected virtual void SrvShoot()
     {
         var angle = Random.Range(-Options.inaccuracy_angle, Options.inaccuracy_angle);
         ObjectManager.RegisterPrefab(Options.shot_descriptor);
         var instance =
-            ObjectManager.Spawn(Options.shot_descriptor, new NetworkObjectOptions(new ShotOptions()
+            ObjectManager.SrvSpawn(Options.shot_descriptor, new NetworkObjectOptions(new ShotOptions()
             {
                 dmg = 1
             }), transform.position, transform.rotation, o =>
             {
                 var shot = o.GetComponent<CommonShot>();
-                shot.Rotate(angle);
+                shot.SrvRotate(angle);
+                shot.SrvSetActive(_active);
                 shot.PlayerOwner = Owner;
             }, null);
     }

@@ -6,7 +6,7 @@ public interface IItemManager
 
     event Action<Guid> ClientRemovedItem;
 
-    void SetItemToPlayer(PlayerSlot player, FullItemDescriptor descriptor);
+    void SrvSetItemToPlayer(PlayerSlot player, FullItemDescriptor descriptor);
 
-    void UseItem(PlayerSlot player, Guid itemId, Guid spawnPointId);
+    void SrvUseItem(PlayerSlot player, Guid itemId, Guid spawnPointId);
 }
