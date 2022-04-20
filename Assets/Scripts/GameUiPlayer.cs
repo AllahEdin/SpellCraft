@@ -23,6 +23,11 @@ public class GameUiPlayer : NetworkBehaviour
 
         Buttons.GetIncreaseDmgBy1Button().onClick.AddListener(() => ChangeDmg(1));
         Buttons.GetDecreaseDmgBy1Button().onClick.AddListener(() => ChangeDmg(-1));
+
+        Buttons.GetIncreaseHpBy1Button().onClick.AddListener(() => ChangeHp(1));
+        Buttons.GetDecreaseHpBy1Button().onClick.AddListener(() => ChangeHp(-1));
+
+        Buttons.GetNextTurnButton().onClick.AddListener(ClientEndTurn);
     }
 
     [Client]
@@ -58,17 +63,27 @@ public class GameUiPlayer : NetworkBehaviour
         GameManager.ServerChangeDmgForPlayer(playerNumber, value);
     }
 
-
-    [ClientCallback]
-    private void Update()
+    [Client]
+    public void ChangeHp(int value)
     {
-        if (!_ready)
-            return;
+        if (_ready && isLocalPlayer)
+        {
+            Debug.Log($"Client: {_playerNumber} gold value: {value}");
+            CmdChangeHp(_playerNumber, value);
+        }
+    }
 
-        if (!isLocalPlayer)
-            return;
-        
-        if (Input.GetKey(KeyCode.Q))
+    [Command]
+    public void CmdChangeHp(int playerNumber, int value)
+    {
+        GameManager.ServerChangeHpForPlayer(playerNumber, value);
+    }
+
+
+    [Client]
+    private void ClientEndTurn()
+    {
+        if (_ready && isLocalPlayer)
         {
             CmdEndTurn(_playerNumber);
         }

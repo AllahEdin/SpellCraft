@@ -9,6 +9,7 @@ public class GameUiGameManager : NetworkBehaviour
     [SerializeField] private Text _playerGoldText;
     [SerializeField] private Text _playerDmgText;
     [SerializeField] private Text _playerHpText;
+    [SerializeField] private Text _yourHpText;
     [SerializeField] private Text _enemyHpText;
 
 
@@ -21,6 +22,7 @@ public class GameUiGameManager : NetworkBehaviour
 
     private int _currentPlayerGold = 0;
     private int _currentPlayerDmg = 0;
+    private int _currentPlayerHp = 0;
 
     private int _clientPlayerNumber;
 
@@ -57,6 +59,7 @@ public class GameUiGameManager : NetworkBehaviour
         RpcSetPlayerTurnNumber(num);
         ServerSetPlayerGold(0);
         ServerSetPlayerDmg(0);
+        ServerSetPlayerHp(0);
     }
 
     [ClientRpc]
@@ -142,6 +145,38 @@ public class GameUiGameManager : NetworkBehaviour
 
 
 
+    [Server]
+    public void ServerChangeHpForPlayer(int playerNumber, int changeValue)
+    {
+        Debug.Log($"Player {playerNumber} trying to change dmg changeValue by {changeValue}");
+
+        if (!_ready)
+            return;
+
+        if (_playerTurn != playerNumber)
+            return;
+
+        if (_currentPlayerHp + changeValue < 0)
+        {
+            return;
+        }
+
+        ServerSetPlayerHp(_currentPlayerHp + changeValue);
+    }
+
+    [Server]
+    public void ServerSetPlayerHp(int value)
+    {
+        _currentPlayerHp = value;
+        RpcChangeHp(_currentPlayerHp);
+    }
+
+    [ClientRpc]
+    public void RpcChangeHp(int currentValue)
+    {
+        _playerHpText.text = $"{currentValue} hp";
+    }
+
 
 
 
@@ -160,6 +195,7 @@ public class GameUiGameManager : NetworkBehaviour
                 : 0;
 
         _hp[nextPlayer] -= _currentPlayerDmg;
+        _hp[playerNum] += _currentPlayerHp;
         RpcUpdateHp(_hp[0], _hp[1]);
         ServerSetPlayerTurn(nextPlayer);
     }
@@ -169,12 +205,12 @@ public class GameUiGameManager : NetworkBehaviour
     {
         if (_clientPlayerNumber == 0)
         {
-            _playerHpText.text = $"{player0}";
+            _yourHpText.text = $"{player0}";
             _enemyHpText.text = $"{player1}";
         }
         else
         {
-            _playerHpText.text = $"{player1}";
+            _yourHpText.text = $"{player1}";
             _enemyHpText.text = $"{player0}";
         }
     }
